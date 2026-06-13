@@ -1,0 +1,17 @@
+{
+  "name": "Temple Tour Tracker",
+  "short_name": "Yatra Tracker",
+  "description": "South India Temple Tour Tracker with Real-Time Location and Media Sync",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#080e1a",
+  "theme_color": "#0d1829",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "assets/vishnu_namam_3d.png",
+      "type": "image/png",
+      "sizes": "192x192 512x512"
+    }
+  ]
+}

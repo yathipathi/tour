@@ -1,0 +1,32 @@
+# Ignored files and folders
+
+# Dependencies
+node_modules/
+
+# Environment configurations containing credentials
+.env
+.env.local
+.env.*.local
+
+# IDEs & System files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# App logs and agent settings
+.gemini/
+*.log
+
+# Gallery uploaded files (optional, but usually local files are ignored if they are user-specific data)
+shared_gallery/
+
+# Temporary data
+yatra_data.json
+scratch/
+
+# Android Native Build outputs & IDE settings
+android/.gradle/
+android/.idea/
+android/app/build/
+*.apk

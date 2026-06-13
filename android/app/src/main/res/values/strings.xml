@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Temple Tour Tracker</string>
+    <string name="title_activity_main">Temple Tour Tracker</string>
+    <string name="package_name">com.yathipathi.templetour</string>
+    <string name="custom_url_scheme">com.yathipathi.templetour</string>
+</resources>

@@ -1,0 +1,14 @@
+{
+  "appId": "com.yathipathi.templetour",
+  "appName": "Temple Tour Tracker",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "server": {
+    "url": "https://tour-o9vx.onrender.com",
+    "cleartext": true,
+    "androidScheme": "https",
+    "allowNavigation": [
+      "*"
+    ]
+  }
+}

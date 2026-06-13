@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>YOUNG BOYS - Temple Tour Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;500;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles/main.css?v=youngboys8">
+  <link rel="manifest" href="/manifest.json">
+  <!-- Leaflet Map CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+<body>
+  <!-- Lock Screen Overlay -->
+  <div id="lockScreen" class="lock-screen-overlay" style="display:none;">
+    <!-- Step 1: Role Selection Card -->
+    <div class="lock-card" id="roleSelectionCard">
+      <div class="lock-symbols-wrap">
+        <img src="assets/vishnu_namam_3d.png" alt="Vishnu Namam" class="lock-symbols-3d">
+      </div>
+      <h2 class="lock-title">YOUNG BOYS Portal</h2>
+      <p class="lock-subtitle">Select your role to access the tracker</p>
+      
+      <div class="role-selection-options">
+        <button class="role-select-btn btn-driver" onclick="window.selectRole('driver')">
+          <span class="role-icon">🚗</span>
+          <div>
+            <span class="role-name">Driver Mode</span>
+            <span class="role-desc">Requires passkey access</span>
+          </div>
+        </button>
+        <button class="role-select-btn btn-family" onclick="window.selectRole('family')">
+          <span class="role-icon">👪</span>
+          <div>
+            <span class="role-name">Family Mode</span>
+            <span class="role-desc">Direct real-time tracking</span>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 2: Passkey Card (Initially Hidden) -->
+    <div class="lock-card" id="passkeyCard" style="display:none;">
+      <div class="lock-symbols-wrap">
+        <img src="assets/vishnu_namam_3d.png" alt="Vishnu Namam" class="lock-symbols-3d">
+      </div>
+      <h2 class="lock-title">Driver Access</h2>
+      <p class="lock-subtitle">Enter Starting Passkey to unlock</p>
+      
+      <div class="lock-form-group">
+        <input type="password" id="passkeyInput" maxlength="4" placeholder="••••" autocomplete="off" onkeydown="if(event.key==='Enter') window.unlockApp()">
+        <p class="lock-error-msg" id="lockError" style="display:none;">❌ Invalid Passkey. Access Denied.</p>
+        <div style="display:flex; gap:10px; margin-top: 20px;">
+          <button class="btn-secondary" onclick="window.backToRoleSelection()" style="flex:1; padding: 10px;">⬅ Back</button>
+          <button class="btn-primary" onclick="window.unlockApp()" style="flex:2; padding: 10px;">🔓 Access</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="app">
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <div class="om-symbol" style="display: flex; align-items: center; justify-content: center;">
+          <svg viewBox="0 0 100 100" class="logo-namam-svg" style="width: 28px; height: 28px;">
+            <path d="M 25,20 L 37,20 C 37,55 45,65 50,70 C 55,65 63,55 63,20 L 75,20 C 75,65 62,78 50,85 C 38,78 25,65 25,20 Z" fill="#FFFFFF" />
+            <path d="M 50,15 C 47,40 45,60 47,75 C 50,78 50,78 53,75 C 55,60 53,40 50,15 Z" fill="#EF5350" />
+          </svg>
+        </div>
+        <div class="logo-text">
+          <span class="logo-title">YOUNG BOYS</span>
+          <span class="logo-sub">Temple Tour Tracker</span>
+        </div>
+      </div>
+
+      <div class="sidebar-menu">
+        <button class="nav-btn active" data-tab="dashboard">
+          <span class="nav-icon">🏠</span>
+          <span>Dashboard</span>
+        </button>
+        <button class="nav-btn" data-tab="route">
+          <span class="nav-icon">🗺️</span>
+          <span>Route Map</span>
+        </button>
+        <button class="nav-btn" data-tab="temples">
+          <span class="nav-icon">🛕</span>
+          <span>Temples</span>
+        </button>
+        <button class="nav-btn" data-tab="schedule">
+          <span class="nav-icon">📅</span>
+          <span>Schedule</span>
+        </button>
+        <button class="nav-btn" data-tab="expenses" id="nav-btn-expenses">
+          <span class="nav-icon">💰</span>
+          <span>Expenses</span>
+        </button>
+        <button class="nav-btn" data-tab="gallery">
+          <span class="nav-icon">🖼️</span>
+          <span>Gallery</span>
+        </button>
+        <button class="nav-btn" data-tab="weather">
+          <span class="nav-icon">🌤️</span>
+          <span>Weather</span>
+        </button>
+        <button class="nav-btn" data-tab="analytics">
+          <span class="nav-icon">📊</span>
+          <span>Analytics</span>
+        </button>
+        <button class="nav-btn" data-tab="emergency">
+          <span class="nav-icon">🆘</span>
+          <span>Emergency</span>
+        </button>
+        <!-- Persistent Install App Button in Sidebar -->
+        <button class="nav-btn" id="sidebar-pwa-install-shortcut" onclick="window.showPwaInstallModal()" style="display: none; background: rgba(212, 168, 67, 0.1); color: var(--accent-gold); border: 1px solid rgba(212, 168, 67, 0.2); margin-top: 15px; font-weight: bold;">
+          <span class="nav-icon">📥</span>
+          <span>Install App</span>
+        </button>
+      </div>
+
+      <div class="sidebar-footer" style="display: flex; flex-direction: column; gap: 8px;">
+        <div class="journey-status">
+          <div class="status-dot"></div>
+          <span>Journey Active</span>
+        </div>
+        <button class="btn-sm" onclick="window.promptResetLock()" style="background: rgba(244, 67, 54, 0.1); border-color: rgba(244, 67, 54, 0.2); color: #EF5350; width: 100%; text-align: center; font-size: 11px; padding: 6px; border-radius: 6px; cursor: pointer;">🔒 Reset & Lock</button>
+      </div>
+    </nav>
+
+    <!-- Mobile Nav Toggle -->
+    <button class="mobile-nav-toggle" id="mobileToggle">☰</button>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Family Viewer Notification Banner -->
+      <div id="family-viewer-banner" style="display:none; background: linear-gradient(90deg, #9C27B0, #E91E8C); color: #fff; text-align: center; padding: 10px; font-size: 13px; font-weight: bold; font-family: 'Cinzel', serif; letter-spacing: 1.5px; z-index: 10;">
+        👨‍👩‍👧‍👦 FAMILY TRACKER MODE: Viewing Pandu's Live Location Updates
+      </div>
+      <!-- Header -->
+      <header class="app-header">
+        <div class="header-left">
+          <h1 class="page-title" id="pageTitle">Sacred Journey Dashboard</h1>
+          <p class="page-subtitle" id="pageSubtitle">South India Pilgrimage Tour · 8 Days · 10 Temples</p>
+        </div>
+        <div class="header-right">
+          <!-- Role Switcher -->
+          <div class="role-switcher" style="display: flex; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; padding: 2px; align-items: center; gap: 4px; z-index: 10;">
+            <button class="role-btn active" id="role-btn-driver" onclick="window.setAppRole('driver')" style="border: none; background: rgba(212, 168, 67, 0.15); color: var(--accent-gold); padding: 5px 12px; font-size: 11px; font-family: 'Cinzel', serif; border-radius: 6px; cursor: pointer; transition: all 0.2s; font-weight: bold;">🚗 Driver</button>
+            <button class="role-btn" id="role-btn-family" onclick="window.setAppRole('family')" style="border: none; background: transparent; color: var(--text-secondary); padding: 5px 12px; font-size: 11px; font-family: 'Cinzel', serif; border-radius: 6px; cursor: pointer; transition: all 0.2s;">👪 Family</button>
+          </div>
+          <div class="current-location-badge">
+            <span class="pulse-dot"></span>
+            <span id="current-location-badge-text">📍 Currently: Rameswaram</span>
+          </div>
+          <div class="date-badge">
+            <span id="currentDate"></span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Tab Content -->
+      <div class="tab-content active" id="tab-dashboard">
+        <!-- Stats Row -->
+        <div class="stats-grid">
+          <div class="stat-card" style="--accent: #FF6B35">
+            <div class="stat-icon">🛣️</div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-dist-val">1,650 km</div>
+              <div class="stat-label">Distance Covered</div>
+              <div class="stat-progress"><div class="progress-fill" id="stat-dist-fill" style="width:61%;background:#FF6B35"></div></div>
+            </div>
+          </div>
+          <div class="stat-card" style="--accent: #9C27B0">
+            <div class="stat-icon">🛕</div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-visited-val">3 / 9</div>
+              <div class="stat-label">Temples Visited</div>
+              <div class="stat-progress"><div class="progress-fill" id="stat-visited-fill" style="width:33%;background:#9C27B0"></div></div>
+            </div>
+          </div>
+          <div class="stat-card" style="--accent: #4CAF50">
+            <div class="stat-icon">⏱️</div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-days-val">5 Days</div>
+              <div class="stat-label">Journey Duration</div>
+              <div class="stat-progress"><div class="progress-fill" id="stat-days-fill" style="width:42%;background:#4CAF50"></div></div>
+            </div>
+          </div>
+          <div class="stat-card" style="--accent: #FFC107" id="stat-card-expenses">
+            <div class="stat-icon">💸</div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-expenses-val">₹13,880</div>
+              <div class="stat-label">Total Expenses</div>
+              <div class="stat-progress"><div class="progress-fill" id="stat-expenses-fill" style="width:55%;background:#FFC107"></div></div>
+            </div>
+          </div>
+          <div class="stat-card" style="--accent: #F44336" id="stat-card-stops">
+            <div class="stat-icon">🛑</div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-stops-val">0 Stops</div>
+              <div class="stat-label">Vehicle Stops</div>
+              <div class="stat-progress"><div class="progress-fill" id="stat-stops-fill" style="width:0%;background:#F44336"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main Dashboard Grid -->
+        <div class="dashboard-grid">
+          <!-- Journey Progress -->
+          <div class="card journey-card">
+            <div class="card-header">
+              <h3>Journey Progress</h3>
+              <span class="badge">61% Complete</span>
+            </div>
+            <div class="route-timeline">
+              <!-- Generated by JS -->
+            </div>
+          </div>
+
+          <!-- Current Temple -->
+          <div class="card current-temple-card">
+            <div class="card-header">
+              <h3>Current Destination</h3>
+              <span class="badge badge-green">Active</span>
+            </div>
+            <div class="temple-spotlight">
+              <div class="temple-emoji">🌺</div>
+              <h2 class="temple-name">Ramanathaswamy Temple</h2>
+              <p class="temple-location">📍 Rameswaram, Tamil Nadu</p>
+              <div class="temple-details-mini">
+                <div class="detail-chip">⏰ 5:00 AM – 9:00 PM</div>
+                <div class="detail-chip">🛕 One of Char Dham</div>
+                <div class="detail-chip">📏 World's Longest Corridor</div>
+              </div>
+              <p class="temple-desc-mini">Famous for 22 holy theerthams and a 1,212m corridor. Lord Rama worshipped Shiva here after Lanka war.</p>
+              <button class="btn-primary" onclick="window.showTab('temples')">View Full Details →</button>
+            </div>
+          </div>
+
+          <!-- Today's Schedule -->
+          <div class="card">
+            <div class="card-header">
+              <h3>Today's Schedule</h3>
+              <span class="badge">Day 5</span>
+            </div>
+            <div class="today-schedule">
+              <div class="schedule-item">
+                <div class="time-block">4:00 AM</div>
+                <div class="sch-detail">
+                  <div class="sch-title">Wake up & freshen</div>
+                  <div class="sch-sub">Hotel checkout</div>
+                </div>
+                <div class="sch-status done">✓</div>
+              </div>
+              <div class="schedule-item">
+                <div class="time-block">5:00 AM</div>
+                <div class="sch-detail">
+                  <div class="sch-title">Agnitheertham Bath</div>
+                  <div class="sch-sub">Holy sea waters</div>
+                </div>
+                <div class="sch-status done">✓</div>
+              </div>
+              <div class="schedule-item active-sch">
+                <div class="time-block">6:30 AM</div>
+                <div class="sch-detail">
+                  <div class="sch-title">22 Theerthams Ritual</div>
+                  <div class="sch-sub">Sacred water ritual • Now</div>
+                </div>
+                <div class="sch-status current">▶</div>
+              </div>
+              <div class="schedule-item">
+                <div class="time-block">11:00 AM</div>
+                <div class="sch-detail">
+                  <div class="sch-title">Main Temple Darshan</div>
+                  <div class="sch-sub">Special ticket queue</div>
+                </div>
+                <div class="sch-status pending">○</div>
+              </div>
+              <div class="schedule-item">
+                <div class="time-block">3:00 PM</div>
+                <div class="sch-detail">
+                  <div class="sch-title">Drive to Srivilliputhur</div>
+                  <div class="sch-sub">~170 km journey</div>
+                </div>
+                <div class="sch-status pending">○</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Weather Widget -->
+          <div class="card weather-card">
+            <div class="card-header">
+              <h3>Weather</h3>
+              <span>Rameswaram</span>
+            </div>
+            <div class="weather-main">
+              <div class="weather-icon-big">⛅</div>
+              <div class="weather-temp">32°C</div>
+              <div class="weather-desc">Partly Cloudy · Coastal winds</div>
+            </div>
+            <div class="weather-row">
+              <div class="weather-item"><span>💧</span><span>78%</span><span>Humidity</span></div>
+              <div class="weather-item"><span>💨</span><span>18 km/h</span><span>Wind</span></div>
+              <div class="weather-item"><span>👁️</span><span>8 km</span><span>Visibility</span></div>
+              <div class="weather-item"><span>🌊</span><span>Moderate</span><span>Sea</span></div>
+            </div>
+            <div class="forecast-row">
+              <div class="forecast-day"><div>Thu</div><div>🌤️</div><div>31°</div></div>
+              <div class="forecast-day"><div>Fri</div><div>🌧️</div><div>28°</div></div>
+              <div class="forecast-day"><div>Sat</div><div>⛅</div><div>30°</div></div>
+              <div class="forecast-day"><div>Sun</div><div>☀️</div><div>33°</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- GPS Tracking & Simulation Control -->
+        <div class="card gps-tracking-card" style="margin-bottom: 20px;">
+          <div class="card-header">
+            <h3>🛰️ GPS & Live Location Controller</h3>
+            <span class="badge badge-green" id="gps-status-badge">Simulator Ready</span>
+          </div>
+          <div class="gps-control-panel">
+            <div class="gps-info-grid">
+              <div class="gps-info-item">
+                <span class="gps-label">🛰️ Current Location (GPS)</span>
+                <span class="gps-value" id="gps-coords">Not Tracking</span>
+              </div>
+              <div class="gps-info-item">
+                <span class="gps-label">🛕 Nearest Pilgrimage Stop</span>
+                <span class="gps-value" id="gps-nearest-stop">Rameswaram (~0.0 km)</span>
+              </div>
+              <div class="gps-info-item">
+                <span class="gps-label">🚗 Active Speed</span>
+                <span class="gps-value" id="gps-speed">0 km/h</span>
+              </div>
+              <div class="gps-info-item">
+                <span class="gps-label">🛣️ Next Segment Toll Tax</span>
+                <span class="gps-value" id="gps-toll-tax">₹150 (to Srivilliputhur)</span>
+              </div>
+            </div>
+            
+            <div class="gps-actions">
+              <button class="btn-primary" id="btn-toggle-gps" onclick="window.toggleLiveGPS()">▶️ Start GPS Tracking</button>
+              <button class="btn-secondary" id="btn-simulate-drive" onclick="window.startSimulation()">🚗 Simulate Journey</button>
+              <button class="btn-secondary" id="btn-simulate-refuel" onclick="window.showRefuelModal()" style="background: rgba(255, 107, 53, 0.15); color: #FF6B35; border-color: rgba(255, 107, 53, 0.3);">⛽ Log Petrol Pump Stop</button>
+              <!-- Persistent Install App Button -->
+              <button class="btn-secondary" id="btn-pwa-install-shortcut" onclick="window.showPwaInstallModal()" style="display: none; background: rgba(212, 168, 67, 0.15); color: var(--accent-gold); border-color: rgba(212, 168, 67, 0.3); font-weight: bold;">📥 Install Yatra App</button>
+            </div>
+
+            <!-- Share Tracking Link Section -->
+            <div id="share-link-section" style="display:none; margin-top: 16px; padding: 12px; background: rgba(156, 39, 176, 0.08); border: 1px solid rgba(156, 39, 176, 0.2); border-radius: 8px;">
+              <p style="font-size: 11px; color: var(--text-secondary); margin-bottom: 8px;">🔗 Share this link with family members to let them track your live location in real-time:</p>
+              <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 12px;">
+                <input type="text" id="share-link-input" readonly value="" style="font-size: 11px; flex: 1; padding: 8px 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 6px; color: var(--accent-gold); outline: none;">
+                <button class="btn-sm" id="btn-copy-share" onclick="window.copyShareLink()" style="padding: 8px 12px; background: var(--bg-card); border-color: rgba(212, 168, 67, 0.3); color: var(--accent-gold); cursor: pointer;">📋 Copy Link</button>
+              </div>
+              <!-- OwnTracks Setup Guide for Bulletproof Background Tracking -->
+              <details style="margin-top: 10px; border-top: 1px dashed rgba(156, 39, 176, 0.2); padding-top: 10px;">
+                <summary style="font-size: 11px; font-weight: bold; color: var(--accent-gold); cursor: pointer; user-select: none;">🛰️ Set up 100% Reliable Background Tracking (OwnTracks)</summary>
+                <div style="font-size: 11px; color: var(--text-secondary); line-height: 1.5; margin-top: 8px; padding-left: 5px;">
+                  <p style="margin-bottom: 6px;">For bulletproof tracking when your phone is locked, minimized, or in your pocket:</p>
+                  <ol style="margin-left: 14px; margin-bottom: 8px;">
+                    <li>Install the free <strong>OwnTracks</strong> app from the iOS App Store or Google Play Store.</li>
+                    <li>Open OwnTracks, tap the menu (cog icon), and select <strong>Connection</strong>.</li>
+                    <li>Set the Mode to <strong>HTTP</strong> and set the Host URL to: <br>
+                      <code style="color: var(--accent-gold); background: rgba(0,0,0,0.2); padding: 2px 4px; border-radius: 4px; display: inline-block; margin-top: 2px;" id="owntracks-url-label"></code>
+                    </li>
+                  </ol>
+                  <p style="color: var(--text-muted); margin-bottom: 6px; font-weight: bold; color: var(--accent-gold);">🔋 Reduce OwnTracks Battery Consumption:</p>
+                  <ul style="margin-left: 14px; margin-bottom: 8px; list-style-type: disc;">
+                    <li><strong>Use Significant Changes Mode (Recommended):</strong> On the main OwnTracks screen, tap the monitoring mode button (it looks like a small play/stop button or arrows) and switch it from <strong>"Move mode"</strong> to <strong>"Significant changes"</strong>. This uses network/cell-towers and updates every ~500m, consuming almost 0% battery.</li>
+                    <li><strong>Tweak Locator Settings:</strong> If using Move mode, go to settings (cog icon) &rarr; <strong>Locator</strong>. Set <strong>Displacement</strong> to at least <code>150</code> (meters) and <strong>Interval</strong> to <code>300</code> (seconds). This stops continuous GPS scanning.</li>
+                    <li><strong>Set Battery to Unrestricted:</strong> In Android settings, search for OwnTracks and set battery usage to <strong>"Unrestricted"</strong> to allow it to run efficiently in the background without Android forcing it to wake up aggressively.</li>
+                  </ul>
+                </div>
+              </details>
+
+              <details style="margin-top: 10px; border-top: 1px dashed rgba(212, 168, 67, 0.2); padding-top: 10px;">
+                <summary style="font-size: 11px; font-weight: bold; color: var(--accent-gold); cursor: pointer; user-select: none;">📱 Phone Settings for Continuous Background GPS</summary>
+                <div style="font-size: 11px; color: var(--text-secondary); line-height: 1.5; margin-top: 8px; padding-left: 5px;">
+                  <p style="margin-bottom: 6px;">To prevent iOS or Android from putting the tracking to sleep when the screen is locked or the app is minimized:</p>
+                  <ul style="margin-left: 14px; margin-bottom: 8px; list-style-type: disc;">
+                    <li><strong>Android:</strong> Go to Settings → Apps → Temple Tour Tracker → Permissions → Location. Select <strong>"Allow all the time"</strong>. Also disable <strong>"Pause app activity if unused"</strong> and set Battery to <strong>"Unrestricted"</strong>.</li>
+                    <li><strong>iOS:</strong> Go to Settings → Privacy & Security → Location Services → Temple Tour Tracker. Select <strong>"Always"</strong> and ensure <strong>"Precise Location"</strong> is turned ON.</li>
+                    <li><strong>Battery:</strong> Turn off Power Saving / Battery Saver mode, as it blocks background GPS scanning.</li>
+                  </ul>
+                  <p style="color: var(--text-muted);">For native apps, native background services and boot receivers will automatically recover if suspended.</p>
+                </div>
+              </details>
+            </div>
+            
+            <div class="gps-simulation-status" id="gps-sim-status" style="display:none; margin-top: 16px;">
+              <div class="sim-progress-bar" style="height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; margin-bottom: 8px;">
+                <div class="sim-progress-fill" id="sim-progress" style="height: 100%; width: 0%; background: linear-gradient(90deg, #FF6B35, #9C27B0); transition: width 0.3s ease;"></div>
+              </div>
+              <p class="sim-text" id="sim-text" style="font-size: 12px; color: var(--text-secondary);">Simulating driving along the highway...</p>
+            </div>
+        </div>
+      </div>
+
+        <!-- Automatic Vehicle Stops Logger -->
+        <div class="card stops-logger-card" style="margin-bottom: 20px;">
+          <div class="card-header" style="display: flex; align-items: center; justify-content: space-between;">
+            <h3>🛑 Automatic Vehicle Stops Logger</h3>
+            <span class="badge badge-red" id="stops-status-badge" style="background: rgba(244, 67, 54, 0.1); color: #EF5350; border: 1px solid rgba(244, 67, 54, 0.3);">0 Registered Stops</span>
+          </div>
+          <p style="font-size: 12px; color: var(--text-secondary); margin: 6px 0 16px;">
+            The server automatically registers vehicle stops when the speed drops below 2 km/h for more than 1 minute (for traffic/red-lights bypass).
+          </p>
+          <div class="stops-list-wrap" id="stopsListContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px;">
+            <!-- Stop logs populated dynamically -->
+            <p style="font-size: 12px; color: var(--text-muted); grid-column: 1 / -1; margin: 0; padding: 10px 0;">No stops recorded yet.</p>
+          </div>
+        </div>
+
+
+
+        <!-- Next Temple & Fuel -->
+        <div class="bottom-grid">
+          <div class="card">
+            <div class="card-header"><h3>Next Destination</h3></div>
+            <div class="next-temple">
+              <div class="next-icon">🌸</div>
+              <div class="next-info">
+                <h4>Andal Temple, Srivilliputhur</h4>
+                <p>~170 km away · ~3 hrs drive</p>
+                <div class="route-chip">Via NH 38 → NH 85</div>
+              </div>
+              <button class="btn-nav" onclick="alert('Navigation started! (Google Maps integration)')">🧭 Navigate</button>
+            </div>
+          </div>
+          <div class="card" id="card-fuel-estimation">
+            <div class="card-header"><h3>Fuel Estimation</h3></div>
+            <div class="fuel-grid">
+              <div class="fuel-item"><span class="fuel-label">Remaining Route</span><span class="fuel-val">1,070 km</span></div>
+              <div class="fuel-item"><span class="fuel-label">Est. Fuel Needed</span><span class="fuel-val">~89 L</span></div>
+              <div class="fuel-item"><span class="fuel-label">Fuel Cost Est.</span><span class="fuel-val">₹9,800</span></div>
+              <div class="fuel-item"><span class="fuel-label">Next Fuel Stop</span><span class="fuel-val">Madurai (42 km)</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Route Map Tab -->
+      <div class="tab-content" id="tab-route">
+        <div class="card map-card" style="padding: 0; overflow: hidden; height: 620px;">
+          <div class="card-header" style="padding: 20px 20px 10px; display: flex; justify-content: space-between; align-items: center;">
+            <h3>Pilgrimage Route Map (Interactive Leaflet)</h3>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <span class="badge">Live GPS Tracking Map</span>
+              <button id="map-theme-toggle" class="btn-sm" onclick="window.toggleMapTheme()" style="background: rgba(255,255,255,0.06); border: 1px solid var(--border); color: var(--text-primary); padding: 4px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                <span>🌓</span> <span id="map-theme-label">Map Mode: Dark</span>
+              </button>
+            </div>
+          </div>
+          <div class="map-wrapper">
+            <div id="mapContainer" style="background: var(--bg-secondary);"></div>
+            <button id="btn-recenter" class="map-recenter-btn" onclick="window.recenterMap()" title="Recenter on car">
+              ⌖
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Temples Tab -->
+      <div class="tab-content" id="tab-temples">
+        <div class="temples-grid" id="templesGrid">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+      <!-- Schedule Tab -->
+      <div class="tab-content" id="tab-schedule">
+        <div class="card">
+          <div class="card-header">
+            <h3>8-Day Pilgrimage Schedule</h3>
+            <span class="badge">Day 1 of 8</span>
+          </div>
+          <div class="schedule-full" id="scheduleFull">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Expenses Tab -->
+      <div class="tab-content" id="tab-expenses">
+        <!-- Expenses Top Stats -->
+        <div class="expenses-header" style="display: flex; flex-direction: column; gap: 20px; margin-bottom: 20px;">
+          <div class="expense-summary-cards" id="expenseSummary" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px;"></div>
+          
+          <div class="card" style="margin: 0; padding: 20px;">
+            <h3 style="font-family: 'Cinzel', serif; font-size: 14px; color: var(--accent-gold); margin-bottom: 12px; letter-spacing: 0.5px;">👥 Expenses Paid by Group Member</h3>
+            <div id="memberSummaryContainer" class="member-summary-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px;">
+              <!-- Generated by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Add Expense Section (Inline Form - No Modals to avoid UI block) -->
+        <div class="card" style="margin-bottom: 20px;">
+          <div class="card-header">
+            <h3>➕ Add New Expense</h3>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 15px;">
+            <div class="form-group" style="margin: 0;">
+              <label style="display: block; font-size: 11px; margin-bottom: 6px; color: var(--text-secondary);">Category</label>
+              <select id="expCat" style="width: 100%; padding: 8px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary);">
+                <option>Fuel</option>
+                <option>Accommodation</option>
+                <option>Food</option>
+                <option>Darshan</option>
+                <option>Shopping</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin: 0;">
+              <label style="display: block; font-size: 11px; margin-bottom: 6px; color: var(--text-secondary);">Paid By</label>
+              <select id="expPaidBy" style="width: 100%; padding: 8px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary);">
+                <option>Pandu</option>
+                <option>Arun Kumar</option>
+                <option>Niranjan</option>
+                <option>Dvn</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin: 0;">
+              <label style="display: block; font-size: 11px; margin-bottom: 6px; color: var(--text-secondary);">Description</label>
+              <input type="text" id="expDesc" placeholder="e.g. Toll Tax" style="width: 100%; padding: 8px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); outline: none;">
+            </div>
+            <div class="form-group" style="margin: 0;">
+              <label style="display: block; font-size: 11px; margin-bottom: 6px; color: var(--text-secondary);">Amount (₹)</label>
+              <input type="number" id="expAmt" placeholder="0" style="width: 100%; padding: 8px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); outline: none;">
+            </div>
+            <div class="form-group" style="margin: 0;">
+              <label style="display: block; font-size: 11px; margin-bottom: 6px; color: var(--text-secondary);">Temple/Location</label>
+              <input type="text" id="expTemple" placeholder="e.g. Madurai" style="width: 100%; padding: 8px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); outline: none;">
+            </div>
+            <div style="display: flex; align-items: flex-end;">
+              <button class="btn-primary" onclick="window.addExpense()" style="width: 100%; padding: 10px; border-radius: 6px; font-weight: bold;">➕ Add Expense</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Expense Log Card -->
+        <div class="card">
+          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h3>📋 Expense Log</h3>
+            <button class="btn-secondary" onclick="window.exportExpensesToCSV()" style="padding: 6px 12px; font-size: 11px; background: rgba(212, 168, 67, 0.1); color: var(--accent-gold); border-color: rgba(212, 168, 67, 0.3); border-radius: 6px; cursor: pointer;">📥 Export to Excel</button>
+          </div>
+          <div class="expense-table-wrap" style="margin-top: 15px; overflow-x: auto;">
+            <table class="expense-table" style="width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr style="border-bottom: 1px solid var(--border); text-align: left;">
+                  <th style="padding: 10px;">Date</th>
+                  <th style="padding: 10px;">Temple</th>
+                  <th style="padding: 10px;">Category</th>
+                  <th style="padding: 10px;">Paid By</th>
+                  <th style="padding: 10px;">Description</th>
+                  <th style="padding: 10px;">Amount</th>
+                  <th style="padding: 10px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="expenseTableBody">
+                <!-- Generated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Weather Tab -->
+      <div class="tab-content" id="tab-weather">
+        <div class="weather-full-grid" id="weatherGrid">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+      <!-- Analytics Tab -->
+      <div class="tab-content" id="tab-analytics">
+        <div class="analytics-grid">
+          <div class="card">
+            <div class="card-header"><h3>Journey Overview</h3></div>
+            <div class="analytics-stats">
+              <div class="an-stat"><div class="an-val">0%</div><div class="an-lbl">Route Complete</div></div>
+              <div class="an-stat"><div class="an-val">0/10</div><div class="an-lbl">Temples Done</div></div>
+              <div class="an-stat"><div class="an-val">1</div><div class="an-lbl">Days Traveled</div></div>
+              <div class="an-stat"><div class="an-val">7</div><div class="an-lbl">Days Remaining</div></div>
+            </div>
+            <div class="progress-bar-full">
+              <div class="pb-label">
+                <span>Journey Progress</span><span>0%</span>
+              </div>
+              <div class="pb-track"><div class="pb-fill" style="width:0%"></div></div>
+            </div>
+          </div>
+
+          <div class="card" id="card-expense-breakdown">
+            <div class="card-header"><h3>Expense Breakdown</h3></div>
+            <div class="donut-chart-wrap">
+              <svg viewBox="0 0 200 200" class="donut-chart">
+                <!-- Donut segments -->
+                <circle cx="100" cy="100" r="80" fill="none" stroke="#FF6B35" stroke-width="30" stroke-dasharray="173 329" stroke-dashoffset="0" transform="rotate(-90 100 100)"/>
+                <circle cx="100" cy="100" r="80" fill="none" stroke="#9C27B0" stroke-width="30" stroke-dasharray="100 402" stroke-dashoffset="-173" transform="rotate(-90 100 100)"/>
+                <circle cx="100" cy="100" r="80" fill="none" stroke="#4CAF50" stroke-width="30" stroke-dasharray="50 452" stroke-dashoffset="-273" transform="rotate(-90 100 100)"/>
+                <circle cx="100" cy="100" r="80" fill="none" stroke="#FFC107" stroke-width="30" stroke-dasharray="79 423" stroke-dashoffset="-323" transform="rotate(-90 100 100)"/>
+                <text x="100" y="95" text-anchor="middle" fill="#fff" font-size="18" font-weight="bold">₹13.8k</text>
+                <text x="100" y="115" text-anchor="middle" fill="#aaa" font-size="11">Total</text>
+              </svg>
+              <div class="donut-legend">
+                <div class="legend-item"><span class="leg-dot" style="background:#FF6B35"></span><span>Fuel (54%)</span></div>
+                <div class="legend-item"><span class="leg-dot" style="background:#9C27B0"></span><span>Stay (31%)</span></div>
+                <div class="legend-item"><span class="leg-dot" style="background:#4CAF50"></span><span>Darshan (8%)</span></div>
+                <div class="legend-item"><span class="leg-dot" style="background:#FFC107"></span><span>Food (10%)</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><h3>Daily Distance Chart</h3></div>
+            <div class="bar-chart-wrap">
+              <div class="bar-chart" id="barChart">
+                <!-- Rendered by JS -->
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><h3>Travel Milestones</h3></div>
+            <div class="milestones-list">
+              <div class="milestone achieved">
+                <div class="ms-icon">🏆</div>
+                <div class="ms-info"><div class="ms-title">Journey Begun</div><div class="ms-sub">Left Hanmakonda June 16</div></div>
+              </div>
+              <div class="milestone achieved">
+                <div class="ms-icon">🌊</div>
+                <div class="ms-info"><div class="ms-title">Southernmost Point</div><div class="ms-sub">Kanyakumari visited</div></div>
+              </div>
+              <div class="milestone achieved">
+                <div class="ms-icon">📏</div>
+                <div class="ms-info"><div class="ms-title">1000 km Milestone</div><div class="ms-sub">Crossed on Day 3</div></div>
+              </div>
+              <div class="milestone">
+                <div class="ms-icon">🏛️</div>
+                <div class="ms-info"><div class="ms-title">UNESCO Temple Visit</div><div class="ms-sub">Thanjavur – Upcoming</div></div>
+              </div>
+              <div class="milestone">
+                <div class="ms-icon">✨</div>
+                <div class="ms-info"><div class="ms-title">Richest Temple Visit</div><div class="ms-sub">Tirupati – Upcoming</div></div>
+              </div>
+              <div class="milestone">
+                <div class="ms-icon">🎯</div>
+                <div class="ms-info"><div class="ms-title">Journey Complete</div><div class="ms-sub">Return to Hanmakonda</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Emergency Tab -->
+      <div class="tab-content" id="tab-emergency">
+        <div class="emergency-header">
+          <div class="emergency-banner">
+            <span>🆘</span>
+            <div>
+              <h3>Emergency Services</h3>
+              <p>Quick access to emergency contacts and services along your route</p>
+            </div>
+          </div>
+        </div>
+        <div class="emergency-grid">
+          <div class="card">
+            <div class="card-header"><h3>Emergency Contacts</h3></div>
+            <div class="emergency-contacts">
+              <a href="tel:112" class="emergency-btn red">
+                <span class="em-icon">🚨</span>
+                <div><div class="em-title">Police / Emergency</div><div class="em-num">112</div></div>
+              </a>
+              <a href="tel:108" class="emergency-btn orange">
+                <span class="em-icon">🚑</span>
+                <div><div class="em-title">Ambulance</div><div class="em-num">108</div></div>
+              </a>
+              <a href="tel:101" class="emergency-btn red2">
+                <span class="em-icon">🚒</span>
+                <div><div class="em-title">Fire Service</div><div class="em-num">101</div></div>
+              </a>
+              <a href="tel:1033" class="emergency-btn blue">
+                <span class="em-icon">🛣️</span>
+                <div><div class="em-title">Highway Helpline</div><div class="em-num">1033</div></div>
+              </a>
+              <a href="tel:1800111363" class="emergency-btn green">
+                <span class="em-icon">🛕</span>
+                <div><div class="em-title">Tourist Helpline</div><div class="em-num">1800-111-363</div></div>
+              </a>
+              <a href="tel:1097" class="emergency-btn purple">
+                <span class="em-icon">💊</span>
+                <div><div class="em-title">Medical Helpline</div><div class="em-num">1097</div></div>
+              </a>
+            </div>
+          </div>
+
+
+
+          <div class="card">
+            <div class="card-header"><h3>Group Members</h3></div>
+            <div class="group-members">
+              <div class="member-item">
+                <div class="member-avatar">👨</div>
+                <div class="member-info"><div class="member-name">Pandu (Lead)</div><div class="member-loc">📍 At Agnitheertham</div></div>
+                <div class="member-status online">●</div>
+              </div>
+              <div class="member-item">
+                <div class="member-avatar">👨</div>
+                <div class="member-info"><div class="member-name">Arun Kumar</div><div class="member-loc">📍 Temple Queue</div></div>
+                <div class="member-status online">●</div>
+              </div>
+              <div class="member-item">
+                <div class="member-avatar">👨</div>
+                <div class="member-info"><div class="member-name">Niranjan</div><div class="member-loc">📍 Parking Area</div></div>
+                <div class="member-status away">●</div>
+              </div>
+              <div class="member-item">
+                <div class="member-avatar">👨</div>
+                <div class="member-info"><div class="member-name">Dvn</div><div class="member-loc">📍 Temple Corridor</div></div>
+                <div class="member-status online">●</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gallery Tab -->
+      <div class="tab-content" id="tab-gallery">
+        <!-- Shared Journey Gallery (Family Folder) -->
+        <div class="card gallery-card" style="margin-bottom: 20px;">
+          <div class="card-header" style="display: flex; align-items: center; justify-content: space-between;">
+            <h3 style="font-family: 'Cinzel', serif; font-size: 14px; font-weight: 600; color: var(--text-primary); letter-spacing: 0.8px; margin: 0;">📁 Shared Journey Gallery (Family Folder)</h3>
+            <button class="btn-primary" id="btn-upload-media" onclick="document.getElementById('gallery-upload-input').click()" style="background: linear-gradient(135deg, var(--accent-gold), #b8922e); color: #000; font-size: 11px; padding: 6px 12px; border-radius: 6px;">📤 Upload Media</button>
+            <input type="file" id="gallery-upload-input" style="display:none;" accept="image/*,video/*" multiple onchange="window.handleGalleryUpload(event)">
+          </div>
+          <p style="font-size: 12px; color: var(--text-secondary); margin: 6px 0 16px;">
+            Photos and videos uploaded here are organized by temple location. Family members can view and download entire folders.
+          </p>
+          <div id="galleryGrid">
+            <!-- Dynamically populated with folder sections -->
+          </div>
+        </div>
+
+        <!-- Gallery Upload Modal -->
+        <div class="modal-overlay" id="galleryUploadModal" style="display:none">
+          <div class="modal" style="width: 420px; max-width: 90vw;">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+              <span style="font-size:32px;filter:drop-shadow(0 0 8px rgba(212,168,67,0.4));">📤</span>
+              <h3 style="font-family:'Cinzel',serif;font-size:18px;color:var(--accent-gold);margin:0;">Upload to Gallery</h3>
+            </div>
+            <div class="form-group">
+              <label>📁 Select Location / Temple Folder</label>
+              <select id="uploadLocation" style="width:100%;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text-primary);outline:none;">
+                <option>Hanmakonda</option>
+                <option>Thiruvananthapuram</option>
+                <option>Kanyakumari</option>
+                <option>Rameswaram</option>
+                <option>Srivilliputhur</option>
+                <option>Madurai</option>
+                <option>Srirangam</option>
+                <option>Thanjavur</option>
+                <option>Kumbakonam</option>
+                <option>Tirupati</option>
+              </select>
+            </div>
+            <div id="uploadFilePreview" style="padding:14px;background:rgba(255,255,255,0.02);border:1px dashed var(--border);border-radius:8px;margin-bottom:16px;font-size:13px;color:var(--text-secondary);text-align:center;">No file selected</div>
+            <div class="modal-buttons">
+              <button class="btn-secondary" onclick="window.closeUploadModal()">Cancel</button>
+              <button class="btn-primary" onclick="window.confirmGalleryUpload()" style="background:linear-gradient(135deg, var(--accent-gold), #b8922e);color:#000;">📤 Upload File</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Petrol Pump Refueling Modal -->
+  <div class="modal-overlay" id="refuelModal" style="display:none">
+    <div class="modal refuel-modal" style="width: 420px; max-width: 90vw;">
+      <div class="refuel-header" style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+        <span class="refuel-icon" style="font-size: 36px; filter: drop-shadow(0 0 10px rgba(255, 107, 53, 0.4));">⛽</span>
+        <h3 style="font-family: 'Cinzel', serif; font-size: 18px; color: #FF6B35; margin: 0;">Petrol Pump Stop</h3>
+      </div>
+      <p class="refuel-msg" style="font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 20px;">
+        You've stopped at a petrol pump. Input the fuel details to log the refueling cost in your Expense Tracker.
+      </p>
+      
+      <div class="form-group">
+        <label>Total Cost / Amount Paid (₹)</label>
+        <input type="number" id="refuelTotal" placeholder="e.g. 2000" min="1" step="0.01" oninput="window.calcRefuelLiters()">
+      </div>
+      
+      <div class="form-group">
+        <label>Paid By</label>
+        <select id="refuelPaidBy" style="width: 100%; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: var(--text-primary); outline: none;">
+          <option>Pandu</option>
+          <option>Arun Kumar</option>
+          <option>Niranjan</option>
+          <option>Dvn</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label>Fuel Price per Liter (₹)</label>
+        <input type="number" id="refuelRate" value="102.50" step="0.01" oninput="window.calcRefuelLiters()">
+      </div>
+      
+      <div class="form-group">
+        <label>Liters of Fuel Filled</label>
+        <input type="number" id="refuelLiters" placeholder="0.00" readonly style="background: rgba(255,255,255,0.02); color: var(--accent-gold); font-weight: bold;">
+      </div>
+
+      <div class="form-group">
+        <label>Location / Pump Name</label>
+        <input type="text" id="refuelLocation" value="Highway HP Petrol Pump">
+      </div>
+      
+      <div class="modal-buttons">
+        <button class="btn-secondary" onclick="window.closeRefuelModal()">Skip / Cancel</button>
+        <button class="btn-primary" onclick="window.submitRefuelExpense()" style="background: linear-gradient(135deg, #FF6B35, #e0531f); color: #fff;">⛽ Save Fuel Cost</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Place Details Modal -->
+  <div class="modal-overlay" id="placeDetailsModal" style="display:none">
+    <div class="modal place-modal" style="width: 650px; max-width: 95vw; position: relative;">
+      <button class="modal-close-btn" onclick="window.closePlaceDetails()" style="position: absolute; top: 16px; right: 16px; background: transparent; border: none; color: var(--text-muted); font-size: 24px; cursor: pointer; transition: color 0.2s;">×</button>
+      
+      <div class="place-detail-header" style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 16px;">
+        <div class="place-emoji" id="place-detail-emoji" style="font-size: 42px; background: rgba(255,255,255,0.03); padding: 10px; border-radius: 12px; border: 1px solid var(--border);">🛕</div>
+        <div class="place-title-wrap">
+          <h2 id="place-detail-name" style="font-family: 'Cinzel', serif; font-size: 22px; color: var(--accent-gold); margin: 0 0 4px;">Temple Name</h2>
+          <p id="place-detail-deity" style="font-size: 13px; color: var(--text-secondary); margin: 0;">Presiding Deity Details</p>
+        </div>
+      </div>
+      
+      <div class="place-info-grid" style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; margin-bottom: 20px;">
+        <div class="place-info-col" style="display: flex; flex-direction: column; gap: 12px;">
+          <div class="info-section">
+            <h4 style="font-family: 'Cinzel', serif; font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px;">📍 Location</h4>
+            <p id="place-detail-loc" style="font-size: 13px; color: var(--text-primary);">State details</p>
+          </div>
+          <div class="info-section">
+            <h4 style="font-family: 'Cinzel', serif; font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px;">⏰ Darshan Hours</h4>
+            <p id="place-detail-timing" style="font-size: 13px; color: var(--text-primary);">Timings</p>
+          </div>
+          <div class="info-section">
+            <h4 style="font-family: 'Cinzel', serif; font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px;">🛣️ Segment Toll Tax</h4>
+            <p id="place-detail-toll" style="font-size: 13px; color: var(--accent-gold); font-weight: 600;">₹0</p>
+          </div>
+        </div>
+        
+        <div class="place-info-col">
+          <div class="info-section" style="height: 100%;">
+            <h4 style="font-family: 'Cinzel', serif; font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px;">🌤️ Weather Condition</h4>
+            <div class="place-weather-card" id="place-detail-weather" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; height: calc(100% - 24px);">
+              <span class="pw-icon" style="font-size: 32px;">☀️</span>
+              <span class="pw-temp" style="font-family: 'Cinzel', serif; font-size: 20px; font-weight: bold; color: var(--accent-gold);">--°C</span>
+              <span class="pw-desc" style="font-size: 11px; color: var(--text-muted); text-align: center;">--</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="info-section" style="margin-bottom: 20px;">
+        <h4 style="font-family: 'Cinzel', serif; font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px;">📜 Significance & History</h4>
+        <p class="place-desc" id="place-detail-desc" style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin: 0;">Detailed description...</p>
+      </div>
+      
+      <div class="info-section">
+        <h4 style="font-family: 'Cinzel', serif; font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px; letter-spacing: 0.5px;">⭐ Nearby Famous Attractions</h4>
+        <div class="attractions-grid" id="place-detail-attractions" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+          <!-- Attractions dynamic -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gallery Preview Modal -->
+  <div class="modal-overlay" id="galleryPreviewModal" style="display:none" onclick="window.closeGalleryPreview()">
+    <div class="modal preview-modal" style="width: 800px; max-width: 95vw; background: rgba(12, 12, 12, 0.95); border: 1px solid var(--border); padding: 24px; position: relative;" onclick="event.stopPropagation()">
+      <button class="modal-close-btn" onclick="window.closeGalleryPreview()" style="position: absolute; top: 16px; right: 16px; background: transparent; border: none; color: var(--text-muted); font-size: 28px; cursor: pointer; transition: color 0.2s; z-index: 10;">×</button>
+      <div id="galleryPreviewContent" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 200px; max-height: 65vh; overflow: hidden; margin-top: 10px;">
+        <!-- Filled dynamically with img or video -->
+      </div>
+      <div id="galleryPreviewTitle" style="color: var(--accent-gold); font-family: 'Cinzel', serif; font-size: 16px; text-align: center; margin-top: 18px; font-weight: bold; letter-spacing: 0.5px;">Media Title</div>
+      <div id="galleryPreviewMeta" style="color: var(--text-secondary); font-size: 12px; text-align: center; margin-top: 6px; margin-bottom: 16px;">Location · Date · Size</div>
+      <div style="display: flex; justify-content: center;">
+        <a id="galleryPreviewDownloadBtn" href="#" download class="btn-primary" style="background: linear-gradient(135deg, var(--accent-gold), #b8922e); color: #000; font-size: 12px; padding: 8px 20px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-flex; align-items: center; gap: 6px;">📥 Download Media</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reset Passkey Modal -->
+  <div class="modal-overlay" id="resetModal" style="display:none">
+    <div class="modal reset-passkey-modal" style="width: 380px; max-width: 90vw; border: 1px solid rgba(244, 67, 54, 0.3) !important; box-shadow: 0 10px 40px rgba(0,0,0,0.8), 0 0 20px rgba(244, 67, 54, 0.1); background: linear-gradient(135deg, #180d0d 0%, #0c0606 100%) !important;">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+        <span style="font-size: 32px; filter: drop-shadow(0 0 8px rgba(244,67,54,0.4));">🔒</span>
+        <h3 style="font-family: 'Cinzel', serif; font-size: 16px; color: #EF5350; margin: 0;">Lock & Reset YOUNG BOYS</h3>
+      </div>
+      <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 20px;">
+        Enter the Reset Passkey to lock the application and clear all current location and media logs.
+      </p>
+      
+      <div class="form-group">
+        <label>Reset Passkey</label>
+        <input type="password" id="resetPasskeyInput" placeholder="••••" maxlength="4" autocomplete="off" onkeydown="if(event.key==='Enter') window.submitResetLock()" style="width: 100%; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: var(--text-primary); font-size: 16px; outline: none; transition: border-color 0.2s; text-align: center; letter-spacing: 4px;">
+        <p class="lock-error-msg" id="resetError" style="display:none; color: #EF5350; font-size: 11px; margin-top: 6px; font-weight: 500;">❌ Invalid Reset Passkey.</p>
+      </div>
+      
+      <div class="modal-buttons" style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+        <button class="btn-secondary" onclick="window.closeResetModal()">Cancel</button>
+        <button class="btn-primary" onclick="window.submitResetLock()" style="background: linear-gradient(135deg, #EF5350, #d32f2f); color: #fff;">🔒 Reset & Lock</button>
+      </div>
+    </div>
+  <!-- PWA Install Prompt Modal -->
+  <div class="modal-overlay" id="pwaInstallModal" style="display:none">
+    <div class="modal pwa-install-modal" style="width: 400px; max-width: 90vw; border: 1px solid var(--border); background: linear-gradient(135deg, #0d1829 0%, #080e1a 100%) !important; box-shadow: 0 15px 50px rgba(0,0,0,0.8), 0 0 30px rgba(212, 168, 67, 0.15); padding: 24px; border-radius: 12px; position: relative;">
+      <div style="display: flex; flex-direction: column; align-items: center; text-align: center;">
+        <div class="om-symbol-wrap" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; background: rgba(212, 168, 67, 0.1); border-radius: 50%; border: 1px solid rgba(212, 168, 67, 0.3); margin-bottom: 16px;">
+          <img src="assets/vishnu_namam_3d.png" alt="Yatra Logo" style="width: 32px; height: 32px; filter: drop-shadow(0 0 8px rgba(212, 168, 67, 0.4));">
+        </div>
+        <h3 style="font-family: 'Cinzel', serif; font-size: 18px; color: var(--accent-gold); margin: 0 0 8px 0; letter-spacing: 0.5px;">Install Yatra Tracker</h3>
+        <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin: 0 0 20px 0;">
+          Add this application to your home screen like a native app for real-time tracking, faster loading, and highly reliable background location sharing.
+        </p>
+        
+        <!-- Android / Desktop Install Prompt View -->
+        <div id="pwaAndroidView" style="display: none; width: 100%;">
+          <button class="btn-primary" id="btn-pwa-install-action" style="width: 100%; padding: 12px; font-weight: bold; font-family: 'Cinzel', serif; background: linear-gradient(135deg, var(--accent-gold), #b8922e); color: #000; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px;">
+            <span>📥</span> Install App
+          </button>
+        </div>
+
+        <!-- iOS Manual Instructions View -->
+        <div id="pwaiOSView" style="display: none; width: 100%; text-align: left; background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+          <h4 style="font-family: 'Cinzel', serif; font-size: 12px; color: var(--accent-gold); margin: 0 0 10px 0; border-bottom: 1px solid var(--border); padding-bottom: 6px; font-weight: bold;">iPhone/iPad Instructions</h4>
+          <ol style="font-size: 11px; color: var(--text-secondary); line-height: 1.6; margin: 0; padding-left: 18px;">
+            <li style="margin-bottom: 8px;">Tap the <strong>Share</strong> button <span style="font-size: 14px;">📤</span> (at the bottom of Safari).</li>
+            <li style="margin-bottom: 8px;">Scroll down the share sheet and select <strong>Add to Home Screen</strong> <span style="font-size: 14px;">➕</span>.</li>
+            <li>Tap <strong>Add</strong> in the top right corner to finish.</li>
+          </ol>
+        </div>
+
+        <!-- Android / Chrome Manual Instructions Fallback View -->
+        <div id="pwaAndroidManualView" style="display: none; width: 100%; text-align: left; background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+          <h4 style="font-family: 'Cinzel', serif; font-size: 12px; color: var(--accent-gold); margin: 0 0 10px 0; border-bottom: 1px solid var(--border); padding-bottom: 6px; font-weight: bold;">Android/Chrome Instructions</h4>
+          <ol style="font-size: 11px; color: var(--text-secondary); line-height: 1.6; margin: 0; padding-left: 18px;">
+            <li style="margin-bottom: 8px;">Tap the <strong>menu</strong> button <span style="font-size: 14px;">⋮</span> (top right of Chrome).</li>
+            <li style="margin-bottom: 8px;">Select <strong>Add to Home screen</strong> or <strong>Install app</strong>.</li>
+            <li>Follow the on-screen prompts to confirm.</li>
+          </ol>
+        </div>
+        
+        <button class="btn-secondary" id="btn-pwa-install-dismiss" style="width: 100%; padding: 10px; font-size: 11px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+          Maybe Later
+        </button>
+      </div>
+    </div>
+  </div>
+
+<script type="module" src="scripts/main.js?v=youngboys8"></script>
+</body>
+</html>
