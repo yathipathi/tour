@@ -8,8 +8,10 @@
     "dev": "node server.js"
   },
   "dependencies": {
+    "@capacitor-community/background-geolocation": "^1.2.26",
     "@capacitor/android": "^8.4.0",
     "@capacitor/core": "^8.4.0",
+    "@capacitor/geolocation": "^8.2.0",
     "dotenv": "^17.4.2",
     "express": "^4.19.2",
     "mongoose": "^9.6.3",

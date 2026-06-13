@@ -1791,11 +1791,10 @@ window.toggleLiveGPS = async function() {
       try {
         const { Geolocation, BackgroundGeolocation } = window.Capacitor.Plugins;
         
-        // Request Permissions
-        let perm = await BackgroundGeolocation.requestPermissions();
+        // Request Permissions using official Geolocation plugin
+        let perm = await Geolocation.checkPermissions();
         if (perm.location !== 'granted') {
-          // Fallback to normal geolocation permissions if needed
-          await Geolocation.requestPermissions();
+          perm = await Geolocation.requestPermissions();
         }
 
         isCapacitorTracking = true;
@@ -1805,6 +1804,7 @@ window.toggleLiveGPS = async function() {
             backgroundTitle: "Yatra Tracker Active",
             requestType: "requestAlwaysAuthorization",
             stale: true,
+            requestPermissions: true,
             distanceFilter: 50 // update every 50 meters (battery friendly)
           },
           (position, error) => {
