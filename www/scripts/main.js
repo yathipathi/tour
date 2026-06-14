@@ -181,6 +181,13 @@ function loadExpenses() {
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
+  // On fresh session startup, default to Family Mode and clear any previous driver unlock flags
+  if (!sessionStorage.getItem('yatra_session_started')) {
+    sessionStorage.setItem('yatra_session_started', 'true');
+    localStorage.setItem('yatra_app_role', 'family');
+    localStorage.removeItem('yatra_portal_unlocked');
+  }
+
   loadTempleStates();
   loadExpenses();
   initPasskeySystem();
@@ -2270,7 +2277,7 @@ function renderGallery(list) {
   const container = document.getElementById('galleryGrid');
   if (!container) return;
 
-  const role = localStorage.getItem('yatra_app_role') || 'driver';
+  const role = localStorage.getItem('yatra_app_role') || 'family';
   const isFamilyView = role === 'family';
 
   let mediaList = list;
@@ -2681,8 +2688,8 @@ function initFamilyShareAndTracking() {
 
   const params = new URLSearchParams(window.location.search);
   
-  // Set role based on query param OR local storage role. Defaults to 'driver'
-  let role = params.get('view') === 'family-tracker' ? 'family' : (localStorage.getItem('yatra_app_role') || 'driver');
+  // Set role based on query param OR local storage role. Defaults to 'family'
+  let role = params.get('view') === 'family-tracker' ? 'family' : (localStorage.getItem('yatra_app_role') || 'family');
   localStorage.setItem('yatra_app_role', role);
 
   const isFamilyView = role === 'family';
